@@ -21,10 +21,10 @@ from flask import Flask, redirect, url_for, request, render_template
 app = Flask(__name__,static_url_path='/static')
 
 # Model saved with Keras model.save()
-#MODEL_PATH ='model_inc.h5'
+MODEL_PATH ='model_inc.h5'
 
 # Load your trained model
-#model = load_model(MODEL_PATH)
+model = load_model(MODEL_PATH)
 
 
 print("yes")
@@ -63,6 +63,23 @@ def model_predict(img_path, model):
 def index():
     # Main page
     return render_template('index1.html')
+
+@app.route('/predict', methods=['GET', 'POST'])
+def upload():
+    if request.method == 'POST':
+        # Get the file from post request
+        f = request.files['file']
+
+        # Save the file to ./uploads
+        #basepath = os.path.dirname(__file__)
+        #file_path = os.path.join(basepath, 'uploads', secure_filename(f.filename))
+        #f.save(file_path)
+
+        # Make prediction
+        preds = model_predict(f, model)
+        result=preds
+        return result
+    return None
 
 
 if __name__ == '__main__':
