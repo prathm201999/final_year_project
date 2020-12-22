@@ -14,6 +14,7 @@ from tensorflow.keras.preprocessing import image
 
 # Flask utils
 from flask import Flask, redirect, url_for, request, render_template
+from gevent.pywsgi import WSGIServer
 
 
 # Define a flask app
@@ -83,5 +84,3 @@ def upload():
     return None
 
 
-if __name__ == '__main__':
-    app.run(port=5000,debug=True)

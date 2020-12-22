@@ -1,90 +1,85 @@
-import numpy as np
-import cv2
+from __future__ import division, print_function
+
+
 import os
-import random
-import matplotlib.pyplot as plt
-import pickle
-
-Directory=r"E:\dataset"
-categories=['Normal','Cataract','Glaucoma','Retina_disease']
-
-IMG_SIZE=200
-data=[]
-for category in categories:
-    folder=os.path.join(Directory,category)
-    labels=categories.index(category)
-    for img in os.listdir(folder):
-        img_path=os.path.join(folder,img)
-        img_arr=cv2.imread(img_path)
-        new_array = cv2.resize(img_arr, (IMG_SIZE, IMG_SIZE)) 
-        data.append([new_array,labels])
 
 
+import numpy as np
 
-random.shuffle(data)
-len(data)
-
-for sample in data[:10]:
-    print(sample[1])
-
-
-x=[]
-y=[]
-IMG_SIZE=200
-for features,labels in data:
-    x.append(features)
-    y.append(labels)
-    
+# Keras
+from tensorflow.keras.applications.imagenet_utils import preprocess_input, decode_predictions
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing import image
 
 
-x= np.array(x)
-
-y=np.array(y)
-
+# Flask utils
+from flask import Flask, redirect, url_for, request, render_template
 
 
-x[0].reshape(-1, IMG_SIZE, IMG_SIZE, 1)
+# Define a flask app
+app = Flask(__name__,static_url_path='/static')
 
-pickle_out = open("x.pickle","wb")
-pickle.dump(x, pickle_out)
-pickle_out.close()
+# Model saved with Keras model.save()
+MODEL_PATH ='model_inc.h5'
 
-pickle_out = open("y.pickle","wb")
-pickle.dump(y, pickle_out)
-pickle_out.close()
-
-
-x=x/255
-
-x.shape
-
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D,MaxPooling2D,Flatten,Dense
-from tensorflow.keras.callbacks import TensorBoard
-
-model=Sequential()
-
-model.add(Conv2D(64,(3,3),input_shape=x.shape[1:],activation='relu'))
-model.add(MaxPooling2D((2,2)))
-
-model.add(Conv2D(64,(3,3),activation='relu'))
-model.add(MaxPooling2D((2,2)))
-
-model.add(Conv2D(64,(3,3),activation='relu'))
-model.add(MaxPooling2D((2,2)))
-
-model.add(Flatten())
-
-model.add(Dense(64,activation='relu'))
-
-model.add(Dense(4,activation="softmax"))
+# Load your trained model
+model = load_model(MODEL_PATH)
 
 
-model.compile(optimizer='adam',loss='sparse_categorical_crossentropy',metrics=['accuracy'])
+print("yes")
+
+def model_predict(img_path, model):
+    print(img_path)
+    img = image.load_img(img_path, target_size=(200, 200))
+
+    # Preprocessing the image
+    x = image.img_to_array(img)
+    # x = np.true_divide(x, 255)
+    ## Scaling
+    x=x/255
+    x = np.expand_dims(x, axis=0)
+   
+
+    # Be careful how your trained model deals with the input
+    # otherwise, it won't make correct prediction!
+    #x = preprocess_input(x)
+
+    preds = model.predict(x)
+    preds=np.argmax(preds, axis=1)
+    if preds==1:
+        preds="cataract"
+    elif preds==2:
+        preds="Glaucoma"
+    elif preds==0:
+        preds="Normal"
+    else:
+        preds="Retina Diseases"
+      
+    return preds
 
 
-model.fit(x,y,epochs=5,validation_split=0.1,batch_size=32)
+@app.route('/', methods=['GET'])
+def index():
+    # Main page
+    return render_template('index1.html')
 
-model.save('E:/dataset/model_final.h5')
+
+@app.route('/predict', methods=['GET', 'POST'])
+def upload():
+    if request.method == 'POST':
+        # Get the file from post request
+        f = request.files['file']
+
+
+        # Save the file to ./uploads
+        #basepath = os.path.dirname(__file__)
+        #file_path = os.path.join(basepath, 'uploads', secure_filename(f.filename))
+        #f.save(file_path)
+
+        # Make prediction
+        preds = model_predict(f, model)
+        result=preds
+        return result
+    return None
 
 
