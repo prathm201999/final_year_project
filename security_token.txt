@@ -1,4 +1,0 @@
-security_token1 = "qwertyuiop"
-security_token2 = "qwertyuiopasdfghjkl"
-security_token3 = "qwertyuiopasdfghjklzxcvbnm"
-
